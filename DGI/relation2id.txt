@@ -1,0 +1,14 @@
+activator	0
+agonist	1
+allosteric_modulator	2
+antagonist	3
+antibody	4
+antisense	5
+binder	6
+blocker	7
+channel_blocker	8
+gating_inhibitor	9
+inhibitor	10
+modulator	11
+positive_allosteric_modulator	12
+vaccine	13
