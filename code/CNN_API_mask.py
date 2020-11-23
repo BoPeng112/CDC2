@@ -115,7 +115,6 @@ class CNN(TransE):
         masked_score = single_score(embedding_cnn_masked, W_conv, b_conv, W_fc1, W_fc2, b_fc1, b_fc2, phase, keep_prob, masked = True)
         
         return score, masked_score
-        #return (score + masked_score)/2, 0.0
 
      # calculate loss of batch positive triplets and negative triplets
     def get_loss(self, score_positive, score_negative, score_pos_masked, score_neg_masked):
@@ -127,35 +126,16 @@ class CNN(TransE):
         )
         
         
-        #ranking_loss = tf.reduce_mean( tf.nn.relu(margin + score_negative - score_positive ), name = 'RankSVM')
-        #ranking_loss_mask = tf.reduce_mean( tf.nn.relu(margin + score_neg_masked - score_pos_masked ), name = 'RankSVM')
-        #ranking_loss = tf.reduce_mean(tf.exp(score_negative-score_positive), name = 'RankBoost')
-        #ranking_loss_mask = tf.reduce_mean(tf.exp(score_neg_masked-score_pos_masked), name = 'RankBoost')
-        #loss = tf.reduce_mean( tf.log(1.0 + tf.exp(score_negative - score_positive)), name = 'RankNet')
-        
-        #class_loss = -tf.reduce_mean(tf.log(score_positive + 1e-32) + tf.log(1 - score_negative + 1e-32), name = 'Entropy')
-        #class_loss_mask = -tf.reduce_mean(tf.log(score_pos_masked + 1e-32) + tf.log(1 - score_neg_masked + 1e-32), name = 'Entropy_masked')
         class_loss_pos = -tf.reduce_mean(tf.log(score_positive + 1e-32), name = 'Entropy_pos')
-        #class_loss_pos = -tf.reduce_mean(0.9 * tf.log(score_positive + 1e-32) + 0.1 * tf.log(1 - score_positive + 1e-32), name = 'Entropy_pos')
-        #class_loss_neg = -tf.reduce_mean(0.1 * tf.log(score_negative + 1e-32) + 0.9 * tf.log(1 - score_negative + 1e-32), name = 'Entropy_neg')
         class_loss_neg = -tf.reduce_mean(tf.log(1.0 - score_negative + 1e-32), name = 'Entropy_neg')
 
         class_loss_pos_mask = -tf.reduce_mean(tf.log(score_pos_masked + 1e-32), name = 'Entropy_pos_mask')
-        #class_loss_pos_mask = -tf.reduce_mean(0.9 * tf.log(score_pos_masked + 1e-32) + 0.1 * tf.log(1 - score_pos_masked + 1e-32), name = 'Entropy_pos_mask')
-        #class_loss_neg_mask = -tf.reduce_mean(0.1 * tf.log(score_neg_masked + 1e-32) + 0.9 * tf.log(1 - score_neg_masked + 1e-32), name = 'Entropy_neg_mask')
         class_loss_neg_mask = -tf.reduce_mean(tf.log(1.0 - score_neg_masked + 1e-32), name = 'Entropy_neg_mask')
             
         class_loss = class_loss_pos + class_loss_neg
         class_loss_mask = class_loss_pos_mask + class_loss_neg_mask
-        #return ranking_loss + 0.01 * (class_loss + class_loss_mask)
-
-        #class_loss = tf.reduce_mean(tf.nn.softplus(-score_positive)) + tf.reduce_mean(tf.nn.softplus(score_negative))
-        #class_loss_mask = tf.reduce_mean(tf.nn.softplus(-score_pos_masked)) + tf.reduce_mean(tf.nn.softplus(score_neg_masked))
 
         return class_loss + class_loss_mask
-        #return ranking_loss + 0.01 * class_loss
-        #return class_loss
-        #return ranking_loss + ranking_loss_mask
     
     def evaluation(self, id_triplets_predict_head, id_triplets_predict_tail, id_triplets_predict_relation):
        
@@ -200,17 +180,9 @@ class CNN(TransE):
                 self.W_fc1 = tf.get_variable(shape = [self.out_dim, self.fc_dim], initializer = tf.contrib.layers.xavier_initializer(), regularizer = tf.contrib.layers.l2_regularizer(self.reg), name = 'W_fc1')
                 self.b_fc1 = tf.get_variable(shape = [self.fc_dim], initializer = tf.contrib.layers.xavier_initializer(), regularizer = tf.contrib.layers.l2_regularizer(self.reg), name = 'b_fc1')
                 
-                #self.W = tf.get_variable(shape = [2, self.fc_dim, self.fc_dim], initializer = tf.contrib.layers.xavier_initializer(), name= 'W')
-                #self.B = tf.get_variable(shape = [2, self.fc_dim], initializer = tf.contrib.layers.xavier_initializer(), name= 'B')
                 self.W_fc2 = tf.get_variable(shape = [self.fc_dim, 1], initializer = tf.contrib.layers.xavier_initializer(), regularizer = tf.contrib.layers.l2_regularizer(self.reg), name = 'W_fc2')
                 self.b_fc2 = tf.get_variable(shape = [1], initializer = tf.contrib.layers.xavier_initializer(), regularizer = tf.contrib.layers.l2_regularizer(self.reg), name = 'b_fc2')
                 
-            
-            #with tf.name_scope('normalization'):
-                #self.normalize_entity_op = self.embedding_entity.assign(tf.nn.l2_normalize(self.embedding_entity, dim = 1))
-                #self.normalize_relation_op = self.embedding_relation.assign(tf.nn.l2_normalize(self.embedding_relation, dim = 1))
-                #self.normalize_entity_op = self.embedding_entity.assign(tf.clip_by_norm(self.embedding_entity, 1.0, axes = 1))
-                #self.normalize_relation_op = self.embedding_relation.assign(tf.clip_by_norm(self.embedding_relation, 1.0, axes = 1))
             
             with tf.name_scope('inference'):
                 score_positive, score_negative, score_pos_masked, score_neg_masked = self.inference(self.id_triplets_positive, self.id_triplets_negative)
@@ -249,9 +221,6 @@ class CNN(TransE):
         log_f =  open(self.log_path, 'w+')
         
         num_batch = self.dataset.num_triplets_train // self.batch_size
-            
-        ##validate_data = dataset.triplets_validate[0:self.evaluate_size-1]
-        ##test_data = dataset.triplets_test
             
         # training
         print('start training...')
@@ -313,9 +282,6 @@ class CNN(TransE):
      
     # write embedding
     def get_embedding(self):
-        
-        #self.sess.run(self.normalize_entity_op)
-        #self.sess.run(self.normalize_relation_op)
         
         return self.sess.run(self.embedding_entity), self.sess.run(self.embedding_relation)
     
